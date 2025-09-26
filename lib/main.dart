@@ -1,0 +1,159 @@
+import 'dart:io';
+
+import 'package:audioplayers/audioplayers.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:muskan_mobile_v2/cart_screen.dart';
+import 'package:muskan_mobile_v2/customOrderStatusView.dart';
+import 'package:muskan_mobile_v2/distributors/distHome.dart';
+import 'package:muskan_mobile_v2/itemDetail&Customize.dart';
+import 'package:muskan_mobile_v2/orderDone.dart';
+import 'package:muskan_mobile_v2/providers/ConditionalMessageProvider.dart';
+import 'package:muskan_mobile_v2/providers/cart.dart';
+import 'package:muskan_mobile_v2/providers/categories_provider.dart';
+import 'package:muskan_mobile_v2/providers/notificationManager.dart';
+import 'package:muskan_mobile_v2/providers/order.dart';
+import 'package:muskan_mobile_v2/regularOrderStatusView.dart';
+import 'package:muskan_mobile_v2/storeClosed.dart';
+import 'package:muskan_mobile_v2/subcategories.dart';
+import 'package:muskan_mobile_v2/whoUser.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import './home.dart';
+
+import './providers/auth.dart';
+import 'OrdersStatus.dart';
+import 'categories.dart';
+import 'customOrders/customCakeForm.dart';
+import 'customOrders/customOptions.dart';
+import 'items.dart';
+import 'notificationservice/local_notification_service.dart';
+
+Future<void> backgroundHandler(RemoteMessage message) async {
+  final player = AudioPlayer();
+  await player.setSource(AssetSource('sound.mp3'));
+  await player.resume();
+
+  // Show notification as well (if you want to display one)
+  await LocalNotificationService.createAndDisplayNotification(message);
+}
+
+void main() async {
+ 
+  HttpOverrides.global = MyHttpOverrides();
+
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp();
+  await LocalNotificationService().setupNotificationChannel();
+  FirebaseMessaging.onBackgroundMessage(backgroundHandler);
+  await FirebaseMessaging.instance.subscribeToTopic("items_2");
+ 
+  runApp(MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return MultiProvider(providers: [
+      ChangeNotifierProvider(create: (context) => AuthProvider()),
+      ChangeNotifierProvider(
+        create: (context) => CategoriesProvider(),
+      ),
+      ChangeNotifierProvider(create: (context) => CartProvider()),
+      ChangeNotifierProvider(create: (context) => OrderProvider()),
+      ChangeNotifierProvider(create: (context) => NotificationProvider()),
+      ChangeNotifierProvider(create: (context) => ConditionalMessageProvider()),
+    ], child: MaterialAppWithInitialRoute());
+  }
+}
+
+class MyHttpOverrides extends HttpOverrides {
+  @override
+  HttpClient createHttpClient(SecurityContext? context) {
+    return super.createHttpClient(context)
+      ..badCertificateCallback =
+          (X509Certificate cert, String host, int port) => true;
+  }
+}
+
+class MaterialAppWithInitialRoute extends StatelessWidget {
+  Future<String> getInitialRoute() async {
+    final SharedPreferences sp = await SharedPreferences.getInstance();
+    print("keyd");
+    print(sp.getKeys());
+    if (sp.containsKey('loggedInRetailer') ||
+        sp.containsKey("loggedInDistributor")) {
+      return '/categories';
+    }
+    return '/';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder(
+      future: getInitialRoute(),
+      builder: ((context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.done) {
+          if (snapshot.hasData) {
+            print(snapshot.data);
+            return MaterialApp(
+              debugShowCheckedModeBanner: false,
+              title: 'Muskan Shop',
+              theme: ThemeData(primarySwatch: Colors.red),
+              initialRoute: snapshot.data.toString(),
+              routes: {
+                '/': (context) => WhoIsUser(),
+                '/categories': (context) => Categories(),
+                '/subcategories': (context) => Subcategories(),
+                '/items': (context) => Items(),
+                '/item-detail': (context) => ItemDetail(),
+                '/cart': (context) => CartScreen(),
+                '/orderPlaced': (context) => OrderPlaced(),
+                '/storeClosed': (context) => BakeryClosed(),
+                '/customOrderOptions': (context) => CustomOrderOptions(),
+                '/customCakeForm': (context) => CustomCakeForm(),
+                '/myOrders': (context) => OrdersStatus(),
+                '/regularOrderStatus': (context) => RegularOrderStatusView(),
+                '/customOrderStatus': (context) => CustomOrderStatusView(),
+                '/retailerHome': (context) => HomePage(),
+                '/distributorHome': (context) => DistributorHome(),
+              },
+            );
+          } else {
+            print("idhar aaya");
+            return MaterialApp(
+              debugShowCheckedModeBanner: false,
+              title: 'Muskan Shop',
+              theme: ThemeData(primarySwatch: Colors.red),
+              initialRoute: '/',
+              routes: {
+                '/': (context) => WhoIsUser(),
+                '/categories': (context) => Categories(),
+                '/subcategories': (context) => Subcategories(),
+                '/items': (context) => Items(),
+                '/item-detail': (context) => ItemDetail(),
+                '/cart': (context) => CartScreen(),
+                '/orderPlaced': (context) => OrderPlaced(),
+                '/storeClosed': (context) => BakeryClosed(),
+                '/customOrderOptions': (context) => CustomOrderOptions(),
+                '/customCakeForm': (context) => CustomCakeForm(),
+                '/myOrders': (context) => OrdersStatus(),
+                '/regularOrderStatus': (context) => RegularOrderStatusView(),
+                '/customOrderStatus': (context) => CustomOrderStatusView(),
+                '/retailerHome': (context) => HomePage(),
+                '/distributorHome': (context) => DistributorHome(),
+              },
+            );
+          }
+        } else {
+          return CircularProgressIndicator();
+        }
+      }),
+    );
+  }
+}
