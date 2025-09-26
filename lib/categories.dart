@@ -343,48 +343,74 @@ class _CategoriesState extends State<Categories> {
     );
   }
 
-  showUpdateBox(BuildContext context) async {
-    await showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (ctx) => WillPopScope(
-              onWillPop: () {
-                return Future.value(false);
-              },
-              child: AlertDialog(
-                title: Text(
-                  'UPDATE NECESSARY',
-                  style: TextStyle(
-                    color: Colors.black,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
+Future<void> showUpdateBox(BuildContext context) async {
+  await showDialog(
+    context: context,
+    barrierDismissible: false, // prevents dismissing by tapping outside
+    builder: (ctx) => WillPopScope(
+      onWillPop: () => Future.value(false), // disables back button
+      child: AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(15),
+        ),
+        titlePadding: EdgeInsets.zero,
+        title: Stack(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Text(
+                'UPDATE NECESSARY',
+                style: TextStyle(
+                  color: Colors.black,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
                 ),
-                content: Text(
-                  "Please update the app to use new features. We don't support the older versions when new updates are available.",
-                  style: TextStyle(
-                    color: Colors.black,
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                actions: <Widget>[
-                  ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xff1D741B),
-                    ),
-                    child: const Text(
-                      'UPDATE',
-                      style: TextStyle(fontSize: 20, color: Colors.white),
-                    ),
-                    onPressed: () {
-                      StoreRedirect.redirect(androidAppId: 'com.muskan.shop');
-                    },
-                  )
-                ],
               ),
-            ));
-  }
+            ),
+            Positioned(
+              right: 8,
+              top: 8,
+              child: IconButton(
+                icon: Icon(Icons.close, color: Colors.grey[700]),
+                onPressed: () {
+                  Navigator.of(ctx).pop(); // close dialog
+                },
+              ),
+            ),
+          ],
+        ),
+        content: Text(
+          "Please update the app to use new features. We don't support the older versions when new updates are available.",
+          style: TextStyle(
+            color: Colors.black,
+            fontSize: 15,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        actionsAlignment: MainAxisAlignment.center,
+        actions: <Widget>[
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xff1D741B),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
+            ),
+            child: const Text(
+              'UPDATE',
+              style: TextStyle(fontSize: 18, color: Colors.white),
+            ),
+            onPressed: () {
+              StoreRedirect.redirect(androidAppId: 'com.muskan.shop');
+            },
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
 
   void moveToSubcategories(BuildContext context, Category selectedCategory) {
     Provider.of<CategoriesProvider>(context, listen: false)
